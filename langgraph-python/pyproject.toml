@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vsl-starter-langgraph-refund-agent"
+version = "0.1.0"
+description = "Starter: a refund agent on LangGraph with VSL gates in front of every action."
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    # Not on PyPI yet, so installed from the public repositories. vsl-core is named exactly as
+    # vsl-langgraph names it (pip refuses two different URLs for one package); today that is
+    # vsl-core 0.3.0. vsl-langgraph is pinned to a commit.
+    "super-semantics-vsl @ git+https://github.com/supersemantics/VSL-Core.git",
+    "vsl-langgraph @ git+https://github.com/supersemantics/VSL-Langgraph.git@8184e994192a5f9a2b549368fe44782c0ade3734",
+    "langgraph>=0.2,<2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[tool.setuptools]
+packages = ["refund_agent"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

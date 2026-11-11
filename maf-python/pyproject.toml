@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vsl-starter-maf-refund-agent"
+version = "0.1.0"
+description = "Starter: a refund agent on the Microsoft Agent Framework with VSL gates on its tools."
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    # Not on PyPI yet, so installed from the public repositories. vsl-core is named exactly as
+    # vsl-maf names it (pip refuses two different URLs for one package); today that is vsl-core 0.3.0.
+    "super-semantics-vsl @ git+https://github.com/supersemantics/VSL-Core.git",
+    "vsl-maf @ git+https://github.com/supersemantics/VSL-Microsoft-agent-framework.git@v0.2.0",
+    "agent-framework-core>=1.25,<2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[tool.setuptools]
+packages = ["refund_agent"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/RefundAgent/RefundAgent.csproj" />
+  <Project Path="tests/RefundAgent.Tests/RefundAgent.Tests.csproj" />
+</Solution>
