@@ -11,21 +11,11 @@ Built with [VSL-Core.NET](https://github.com/supersemantics/VSL-Core.NET) (`Supe
 
 ## Run it
 
-Needs the .NET 10 SDK.
+Needs the .NET 10 SDK. The VSL packages come from NuGet, like any other package.
 
 ```bash
 dotnet test RefundAgent.slnx                 # the gates, one by one, and the agent end to end
 dotnet run --project src/RefundAgent         # seven requests, then a supervisor re-enables the agent
-```
-
-Until `SuperSemantics.Vsl` and `SuperSemantics.Vsl.AgentFramework` are on NuGet, build them into a
-local folder once and restore from it:
-
-```bash
-git clone --recurse-submodules https://github.com/supersemantics/VSL-Microsoft-agent-framework.NET
-dotnet pack VSL-Microsoft-agent-framework.NET/src/SuperSemantics.Vsl.AgentFramework -c Release -o ~/vsl-packages
-dotnet pack VSL-Microsoft-agent-framework.NET/external/VSL-Core.NET/src/SuperSemantics.Vsl -c Release -o ~/vsl-packages
-dotnet restore RefundAgent.slnx -p:RestoreAdditionalProjectSources=$HOME/vsl-packages
 ```
 
 Every gate decision is written to `refund-ledger.jsonl`, a hash-chained ledger; the run ends by

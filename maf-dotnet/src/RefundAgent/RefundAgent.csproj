@@ -10,8 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Agents.AI" Version="1.28.0" />
-    <PackageReference Include="SuperSemantics.Vsl" Version="0.1.0" />
-    <PackageReference Include="SuperSemantics.Vsl.AgentFramework" Version="0.1.0" />
+    <PackageReference Include="SuperSemantics.Vsl" Version="0.1.1" />
+    <PackageReference Include="SuperSemantics.Vsl.AgentFramework" Version="0.1.1" />
   </ItemGroup>
 
 </Project>
