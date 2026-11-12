@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@langchain/langgraph": "^1.0.0",
-    "@supersemantics/vsl-core": "github:supersemantics/vsl-corejs",
-    "@supersemantics/vsl-langgraph": "github:supersemantics/vsl-langgraphjs#f04a2e6c940cbc218aaf83dfcf11bc6d3f857304"
+    "@supersemantics/vsl-core": "github:supersemantics/vsl-corejs#v0.2.0",
+    "@supersemantics/vsl-langgraph": "github:supersemantics/vsl-langgraphjs#v0.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -9,11 +9,11 @@ description = "Starter: a refund agent on LangGraph with VSL gates in front of e
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
-    # Not on PyPI yet, so installed from the public repositories. vsl-core is named exactly as
-    # vsl-langgraph names it (pip refuses two different URLs for one package); today that is
-    # vsl-core 0.3.0. vsl-langgraph is pinned to a commit.
-    "super-semantics-vsl @ git+https://github.com/supersemantics/VSL-Core.git",
-    "vsl-langgraph @ git+https://github.com/supersemantics/VSL-Langgraph.git@8184e994192a5f9a2b549368fe44782c0ade3734",
+    # Not on PyPI yet, so installed from the public repositories, pinned to release tags.
+    # vsl-core is named exactly as vsl-langgraph names it, tag included (pip refuses two
+    # different URLs for one package).
+    "super-semantics-vsl @ git+https://github.com/supersemantics/VSL-Core.git@v0.3.0",
+    "vsl-langgraph @ git+https://github.com/supersemantics/VSL-Langgraph.git@v0.1.1",
     "langgraph>=0.2,<2",
 ]
 

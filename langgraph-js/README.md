@@ -89,8 +89,9 @@ stand-ins in `providers.ts` (for example a nodemailer transport). The gates don'
 
 ## Notes
 
-- The VSL packages aren't on npm yet, so `package.json` installs them from GitHub. vsl-core is named
-  exactly as vsl-langgraphjs names it, so npm installs one copy: the adapter recognises a denial with
+- The VSL packages aren't on npm yet, so `package.json` installs them from GitHub, pinned to
+  release tags: vsl-corejs `v0.2.0` and vsl-langgraphjs `v0.1.1`. vsl-core is named exactly as
+  vsl-langgraphjs names it, so npm installs one copy: the adapter recognises a denial with
   `instanceof`, which needs the same copy on both sides.
 - vsl-langgraphjs's compiled gates report their identity as `vsl-langgraph`; this starter records its
   own decisions under `refund-agent` in the ledger.
