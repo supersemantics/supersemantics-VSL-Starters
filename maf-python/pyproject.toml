@@ -9,11 +9,9 @@ description = "Starter: a refund agent on the Microsoft Agent Framework with VSL
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
-    # Not on PyPI yet, so installed from the public repositories, pinned to release tags.
-    # vsl-core is named exactly as vsl-maf names it, tag included (pip refuses two different
-    # URLs for one package).
-    "super-semantics-vsl @ git+https://github.com/supersemantics/VSL-Core.git@v0.3.0",
-    "vsl-maf @ git+https://github.com/supersemantics/VSL-Microsoft-agent-framework.git@v0.2.1",
+    # From PyPI. vsl-core is published as super-semantics-vsl (imported as vsl_core).
+    "super-semantics-vsl>=0.3.1,<0.4",
+    "vsl-maf>=0.2.2,<0.3",
     "agent-framework-core>=1.25,<2",
 ]
 

@@ -92,8 +92,7 @@ in `providers.py` (for example `smtp = smtplib.SMTP("mail.example.com")`). The g
 
 ## Notes
 
-- The VSL packages aren't on PyPI yet, so `pyproject.toml` installs them from GitHub, pinned to
-  release tags: vsl-core `v0.3.0` and vsl-langgraph `v0.1.1`. vsl-core is named exactly as
-  vsl-langgraph names it, tag included, because pip refuses two different URLs for one package.
+- The VSL packages come from PyPI: vsl-core as `super-semantics-vsl` (0.3.1 or later 0.3.x,
+  imported as `vsl_core`) and `vsl-langgraph` (0.1.2 or later 0.1.x).
 - vsl-langgraph's compiled gates report their identity as `vsl-langgraph`; this starter records its
   own decisions under `refund-agent` in the ledger.

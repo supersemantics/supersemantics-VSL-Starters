@@ -96,6 +96,5 @@ a scope check on the request). To use real services, replace the stand-ins in `p
 
 ## Notes
 
-- The VSL packages aren't on PyPI yet, so `pyproject.toml` installs them from GitHub, pinned to
-  release tags: vsl-core `v0.3.0` and vsl-maf `v0.2.1`. vsl-core is named exactly as vsl-maf names
-  it, tag included, because pip refuses two different URLs for one package.
+- The VSL packages come from PyPI: vsl-core as `super-semantics-vsl` (0.3.1 or later 0.3.x,
+  imported as `vsl_core`) and `vsl-maf` (0.2.2 or later 0.2.x).
