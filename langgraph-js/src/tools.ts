@@ -1,12 +1,12 @@
-// The actions this agent can take. Two of them have real-world effects and are gated (see
-// governance.ts and agent.ts); looking up an order only reads, so it has no gate.
+// The actions this agent can take, each behind a gate (see governance.ts and agent.ts). Looking an
+// order up only reads, but what it reads could leak, so order-belongs-to-customer runs first.
 
 import { ORDERS, refundBook, type Order } from "./domain.ts";
 import { mailer, refunds } from "./providers.ts";
 
 const SENDER = "refunds@example.com";
 
-/** Read-only: no side effect, so no gate. Over-gating adds noise, not safety. */
+/** Read-only. The gates call it too, to check an order; the agent answers from it only after order-belongs-to-customer passes. */
 export function lookupOrder(orderId: string): Order | undefined {
   return ORDERS[orderId];
 }

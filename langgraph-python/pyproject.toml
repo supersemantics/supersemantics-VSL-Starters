@@ -10,8 +10,8 @@ requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
     # From PyPI. vsl-core is published as super-semantics-vsl (imported as vsl_core).
-    "super-semantics-vsl>=0.3.1,<0.4",
-    "vsl-langgraph>=0.1.2,<0.2",
+    "super-semantics-vsl>=0.4,<0.5",
+    "vsl-langgraph>=0.2,<0.3",
     "langgraph>=0.2,<2",
 ]
 

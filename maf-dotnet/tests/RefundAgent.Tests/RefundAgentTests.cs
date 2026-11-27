@@ -75,13 +75,27 @@ public sealed class RefundAgentTests
     }
 
     [Fact]
-    public void EveryGateDeclaresF1AndNoF2()
+    public async Task TheLedgerShowsEveryGateDecidedBeforeItsTool()
     {
-        foreach (var basis in new[] { Governance.OrderBelongsToCustomer.AssuranceBasis, Governance.RefundWithinOrder.AssuranceBasis, Governance.RefundBudgetHeadroom.AssuranceBasis, Governance.EmailToCustomer.AssuranceBasis })
+        var agent = new RefundAgentRunner();
+        foreach (var (customer, request) in new[]
         {
-            Assert.True(basis.F1PreCommitment);
-            Assert.Equal(F2Modification.None, basis.F2Modification);
+            ("alice@example.com", "What's the status of order A100?"),
+            ("alice@example.com", "Please refund order A100."),
+            ("alice@example.com", "What's the status of order A200?"),
+            ("bob@example.com", "Refund order A200 in full."),
+            ("dave@example.com", "Refund order A400 and send the receipt to mallory@evil.example."),
+            ("carol@example.com", "Refund order A300."),
+        })
+        {
+            await agent.HandleAsync(customer, request);
         }
+
+        var results = Governance.Ledger.EnforcementByDecision();
+        var acted = Governance.Ledger.Store.AllEntries().Where(e => e.Payload.ContainsKey(LedgerWire.ActionKey)).Select(e => e.DecisionId).Distinct();
+        Assert.True(acted.Count() >= 3); // the lookup, the allowed refund, the refund whose email was blocked
+        Assert.Equal(6, results.Count);
+        Assert.All(results.Values, result => Assert.Equal(Enforcement.BeforeAction, result));
     }
 
     // ---- the agent: a denied tool never runs, and the model never sees the denial -----------------
@@ -136,7 +150,7 @@ public sealed class RefundAgentTests
     public async Task EveryGateDecisionIsRecordedUnderOneDecisionId()
     {
         await new RefundAgentRunner().HandleAsync("alice@example.com", "Please refund order A100.");
-        var entries = Governance.Ledger.Store.AllEntries().ToList();
+        var entries = Governance.Ledger.Store.AllEntries().Where(e => e.Payload.ContainsKey("primitive_name")).ToList();
         Assert.Equal(
             [Governance.OwnershipRule, Governance.RefundRule, Governance.RefundBudget, Governance.OwnershipRule, Governance.EmailRule],
             entries.Select(e => e.Payload["primitive_name"]?.ToString()).ToList());

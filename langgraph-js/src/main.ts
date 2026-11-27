@@ -28,3 +28,6 @@ console.log("\n(Refunds Supervisor j.smith re-enabled the agent.)");
 const [customer, request] = ["bob@example.com", "Refund order A200 for $100."];
 console.log(`\n${customer}: ${request}\nAgent: ${await agent.handle(customer, request)}`);
 console.log(`\nLedger intact: ${await ledger.current.verifyIntegrity()} (refund-ledger.jsonl)`);
+const counts = new Map<string, number>();
+for (const result of Object.values(await ledger.current.enforcementByDecision())) counts.set(result, (counts.get(result) ?? 0) + 1);
+console.log(`Enforcement by decision: ${[...counts].map(([name, n]) => `${n} ${name}`).join(", ")}`);

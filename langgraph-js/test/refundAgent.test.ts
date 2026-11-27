@@ -3,20 +3,16 @@
 
 import assert from "node:assert/strict";
 import { beforeEach, describe, test } from "node:test";
-import { AutomationDeniedException, InvariantViolation, LedgerEntryType, VerbaLedger } from "@supersemantics/vsl-core";
+import { ACTION_KEY, AutomationDeniedException, Enforcement, InvariantViolation, LedgerEntryType, VerbaLedger } from "@supersemantics/vsl-core";
 
 import { RefundAgent } from "../src/agent.ts";
 import { ORDERS, RefundBook, refundBook, type RefundCandidate } from "../src/domain.ts";
 import {
   emailGate,
-  emailToCustomer,
   ledger,
-  orderBelongsToCustomer,
   ownershipGate,
-  refundBudget,
   refundBudgetGate,
   refundRuleGate,
-  refundWithinOrder,
 } from "../src/governance.ts";
 import { mailer, refunds } from "../src/providers.ts";
 
@@ -83,12 +79,6 @@ describe("each gate on its own", () => {
     }
   });
 
-  test("every gate declares F1 and no F2", () => {
-    for (const gate of [orderBelongsToCustomer, refundWithinOrder, refundBudget, emailToCustomer]) {
-      assert.equal(gate.assuranceBasis.f1PreCommitment, true);
-      assert.equal(gate.assuranceBasis.f2Modification, "NONE");
-    }
-  });
 });
 
 describe("the agent: a denied action never runs", () => {
@@ -132,13 +122,32 @@ describe("the agent: a denied action never runs", () => {
 
   test("every gate decision is recorded", async () => {
     await new RefundAgent().handle("alice@example.com", "Please refund order A100.");
-    const names = (await entries()).map((e) => e.payload["primitive_name"]);
+    const names = (await entries()).filter((e) => "primitive_name" in e.payload).map((e) => e.payload["primitive_name"]);
     assert.deepEqual(names, [
       "order-belongs-to-customer",
       "refund-within-order",
       "refund-budget-headroom",
       "email-to-customer-on-file",
     ]);
+  });
+
+  test("the ledger shows every gate decided before its action", async () => {
+    const agent = new RefundAgent();
+    for (const [customer, request] of [
+      ["alice@example.com", "What's the status of order A100?"],
+      ["alice@example.com", "Please refund order A100."],
+      ["alice@example.com", "What's the status of order A200?"],
+      ["bob@example.com", "Refund order A200 in full."],
+      ["dave@example.com", "Refund order A400 and send the receipt to mallory@evil.example."],
+      ["carol@example.com", "Refund order A300."],
+    ]) {
+      await agent.handle(customer!, request!);
+    }
+    const results = Object.values(await ledger.current.enforcementByDecision());
+    const acted = new Set((await entries()).filter((e) => ACTION_KEY in e.payload).map((e) => e.decisionId));
+    assert.ok(acted.size >= 3); // the lookup, the allowed refund, the refund whose email was blocked
+    assert.equal(results.length, 6);
+    assert.deepEqual(new Set(results), new Set([Enforcement.BEFORE_ACTION]));
   });
 
   test("another customer's order is never read, refunded or emailed", async () => {

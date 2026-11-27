@@ -44,9 +44,9 @@ comes from your authentication, never from the model or the request text).
 - **email-to-customer-on-file**: the confirmation goes only to the address on the order, never to
   one the model introduced.
 
-All four run before their tool (F1 = True) and only allow or block it, with no model involved at the
-guarded call (F2 = NONE), which derives LOW. That describes influence on a model, not how well the
-gates enforce: deciding whether an action happens at all is F1.
+Each tool records that it ran (`governance.record_action`), so the ledger shows that every gate decided
+before its tool: `governance.ledger.enforcement(decision_id)` reads `BEFORE_ACTION`. The demo prints the
+result for every request.
 
 ## How the gates are wired
 
@@ -83,10 +83,11 @@ tests/            each gate blocks and passes the right cases; denied tools neve
 1. **Find the decision points**: tools with an effect outside the process (money, messages, writes,
    deletes), and reads that could reach data the requester shouldn't see.
 2. **Pick the primitive**: an Invariant for a rule that must never be broken; a PreNode for a measured
-   score against a threshold. Give each a real `AssuranceBasis`, never a default.
+   score against a threshold.
 3. **Gate each tool by name** with `VSLFunctionMiddleware(..., function_name="your_tool")`.
-4. **Record every decision** with `write_gate_decision`, and handle a Terminal State yourself: vsl-core
-   raises; catching it, recording it and stopping is your code.
+4. **Record every decision** with `write_gate_decision`, and each tool's run with `write_action`, and
+   handle a Terminal State yourself: vsl-core raises; catching it, recording it and stopping is your
+   code.
 5. **Add a test** that the gate blocks the case it should and passes the one it shouldn't.
 
 To use a real model, pass any chat client to `RefundAgent(client)` (Azure OpenAI, Foundry, OpenAI);
@@ -96,5 +97,5 @@ a scope check on the request). To use real services, replace the stand-ins in `p
 
 ## Notes
 
-- The VSL packages come from PyPI: vsl-core as `super-semantics-vsl` (0.3.1 or later 0.3.x,
-  imported as `vsl_core`) and `vsl-maf` (0.2.2 or later 0.2.x).
+- The VSL packages come from PyPI: vsl-core as `super-semantics-vsl` (0.4.x, imported as
+  `vsl_core`) and `vsl-maf` (0.3.x).

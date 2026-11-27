@@ -44,9 +44,9 @@ comes from your authentication, never from the request text).
 - **email-to-customer-on-file**: the confirmation goes only to the address on the order, never to
   one the model introduced.
 
-All four run before their action (F1 = True) and only allow or block it, with no model involved at
-the guarded call (F2 = NONE), which derives LOW. That describes influence on a model, not how well the
-gates enforce: deciding whether an action happens at all is F1.
+Each action records that it ran (`governance.record_action`), so the ledger shows that every gate decided
+before its action: `governance.ledger.enforcement(decision_id)` reads `BEFORE_ACTION`. The demo prints the
+result for every request.
 
 ## How it's laid out
 
@@ -79,11 +79,12 @@ shape, with node names and routes written as literals, so the wiring reads plain
    writes, deletes), and reads that could reach data the requester shouldn't see. A read with no
    such scope implication doesn't need a gate.
 2. **Pick the primitive**: an Invariant for a rule that must never be broken; a PreNode for a
-   measured score against a threshold. Give each a real `AssuranceBasis`, never a default.
+   measured score against a threshold.
 3. **Put the side effect in `tools.py`** and a gate node in front of it in `agent.py`, with a
    `route_on_denial` edge after the gate.
-4. **Record every decision** with `write_gate_decision`, and handle a Terminal State yourself:
-   vsl-core raises; catching it, recording it and stopping is your code.
+4. **Record every decision** with `write_gate_decision`, and each action's run with `write_action`,
+   and handle a Terminal State yourself: vsl-core raises; catching it, recording it and stopping is
+   your code.
 5. **Add a test** that the gate blocks the case it should and passes the one it shouldn't.
 
 To use a real model, have the `plan` node call it and return the same plan (an action, an order id,
@@ -92,7 +93,7 @@ in `providers.py` (for example `smtp = smtplib.SMTP("mail.example.com")`). The g
 
 ## Notes
 
-- The VSL packages come from PyPI: vsl-core as `super-semantics-vsl` (0.3.1 or later 0.3.x,
-  imported as `vsl_core`) and `vsl-langgraph` (0.1.2 or later 0.1.x).
+- The VSL packages come from PyPI: vsl-core as `super-semantics-vsl` (0.4.x, imported as
+  `vsl_core`) and `vsl-langgraph` (0.2.x).
 - vsl-langgraph's compiled gates report their identity as `vsl-langgraph`; this starter records its
   own decisions under `refund-agent` in the ledger.

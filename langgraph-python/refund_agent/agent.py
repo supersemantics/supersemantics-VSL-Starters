@@ -118,6 +118,7 @@ def _ownership_candidate(state: RefundState) -> OwnershipCandidate:
 
 def _refund_candidate(state: RefundState) -> RefundCandidate:
     order = lookup_order(state.get("order_id", ""))
+    governance.record_action("lookup_order", state["decision_id"])
     if order is None:
         raise InvariantViolation(reason="unknown order", identity_key=governance.AGENT_ID)
     return RefundCandidate(
@@ -131,6 +132,7 @@ def _refund_candidate(state: RefundState) -> RefundCandidate:
 
 def _email_candidate(state: RefundState) -> EmailCandidate:
     order = lookup_order(state.get("order_id", ""))
+    governance.record_action("lookup_order", state["decision_id"])
     if order is None:
         raise InvariantViolation(reason="unknown order", identity_key=governance.AGENT_ID)
     return EmailCandidate(order, state.get("email_to", ""), state["decision_id"])
@@ -138,6 +140,7 @@ def _email_candidate(state: RefundState) -> EmailCandidate:
 
 def do_refund(state: RefundState) -> RefundState:
     refund_id = issue_refund(state["order_id"], state["amount"])
+    governance.record_action("issue_refund", state["decision_id"])
     budget.record(state["order_id"], state["amount"])
     return {"refund_id": refund_id}
 
@@ -148,11 +151,13 @@ def do_send_email(state: RefundState) -> RefundState:
     else:
         body = f"Here is the receipt for order {state['order_id']}."
     send_email(state["email_to"], f"Order {state['order_id']}", body)
+    governance.record_action("send_email", state["decision_id"])
     return {"reply": f"Done. {body} A confirmation went to {state['email_to']}."}
 
 
 def answer(state: RefundState) -> RefundState:
     order = lookup_order(state.get("order_id", ""))
+    governance.record_action("lookup_order", state["decision_id"])
     if order is None:
         return {"reply": "I could not find that order."}
     return {"reply": f"Order {order.order_id}: ${order.total:.2f}, {'refundable' if order.refundable else 'final sale'}."}

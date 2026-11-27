@@ -44,9 +44,9 @@ customer comes from your authentication, never from the model or the request tex
 - **email-to-customer-on-file**: the confirmation goes only to the address on the order, never to
   one the model introduced.
 
-All four run before their tool (F1 = true) and only allow or block it, with no model involved at the
-guarded call (F2 = None), which derives Low. That describes influence on a model, not how well the
-gates enforce: deciding whether an action happens at all is F1.
+Each tool records that it ran (`Governance.RecordAction`), so the ledger shows that every gate decided
+before its tool: `Governance.Ledger.Enforcement(decisionId)` reads `BeforeAction`. The demo prints the
+result for every request.
 
 ## How the gates are wired
 
@@ -81,10 +81,10 @@ tests/RefundAgent.Tests/  each gate blocks and passes the right cases; denied to
 1. **Find the decision points**: tools with an effect outside the process (money, messages, writes,
    deletes), and reads that could reach data the requester shouldn't see.
 2. **Pick the primitive**: an `Invariant` for a rule that must never be broken; a `PreNode` for a
-   measured score against a threshold. Give each a real `AssuranceBasis`, never a default.
+   measured score against a threshold.
 3. **Gate each tool by name** with `UseVslGates([...], functionName: "your_tool")`.
-4. **Record every decision** with `WriteGateDecision`, and handle a Terminal State yourself: VSL
-   throws; catching it, recording it and stopping is your code.
+4. **Record every decision** with `WriteGateDecision`, and each tool's run with `WriteAction`, and
+   handle a Terminal State yourself: VSL throws; catching it, recording it and stopping is your code.
 5. **Add a test** that the gate blocks the case it should and passes the one it shouldn't.
 
 To use a real model, pass any `IChatClient` to `new RefundAgentRunner(model)` (Azure OpenAI, Foundry,

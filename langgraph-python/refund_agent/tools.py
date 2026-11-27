@@ -1,5 +1,5 @@
-"""The actions this agent can take. Two of them have real-world effects and are gated (see
-governance.py and agent.py); looking up an order only reads, so it has no gate.
+"""The actions this agent can take, each behind a gate (see governance.py and agent.py). Looking an
+order up only reads, but what it reads could leak, so order-belongs-to-customer runs first.
 """
 
 from __future__ import annotations
@@ -11,7 +11,8 @@ SENDER = "refunds@example.com"
 
 
 def lookup_order(order_id: str) -> Order | None:
-    """Read-only: no side effect, so no gate. Over-gating adds noise, not safety."""
+    """Read-only. The gates call it too, to check an order; the agent answers from it only after
+    order-belongs-to-customer passes."""
     return ORDERS.get(order_id)
 
 
