@@ -16,15 +16,13 @@
 //   * email-to-customer-on-file (Invariant): only to the address on the order, never one the model
 //     introduced.
 //
-// Each gate runs before its action (F1 = true) and only allows or blocks it, with no model involved at
-// the guarded call (F2 = NONE). That derives LOW assurance: an honest description of influence on a
-// model, not of how well the gates enforce. Deciding whether an action happens at all is F1.
+// Every gate runs before its action. The ledger shows it: each action is recorded after it runs
+// (recordAction), and ledger.current.enforcement(decisionId) reads BEFORE_ACTION when every gate
+// decided first, or a denial stopped the action. Nothing about that is declared.
 
 import { randomUUID } from "node:crypto";
 import {
-  AssuranceBasis,
   Evidence,
-  F2Modification,
   GammaEstimate,
   GovernanceAuthority,
   IdentityKey,
@@ -42,9 +40,6 @@ import { LangGraphAdapter } from "@supersemantics/vsl-langgraph";
 import type { EmailCandidate, OwnershipCandidate, RefundCandidate } from "./domain.ts";
 
 export const AGENT_ID = "refund-agent";
-
-// Runs before the action (F1); only allows or blocks it, no model at the guarded call (F2 NONE).
-const NO_MODEL_AT_GUARDED_CALL = new AssuranceBasis(true, F2Modification.NONE);
 
 export const REFUND_ESCALATED = new TerminalState({
   name: "refund-escalated",
@@ -98,14 +93,12 @@ export const orderBelongsToCustomer = new Invariant({
   name: "order-belongs-to-customer",
   description: "Only look up, refund or email about an order for the customer it belongs to.",
   rule: orderIsTheCustomers,
-  assuranceBasis: NO_MODEL_AT_GUARDED_CALL,
 });
 
 export const refundWithinOrder = new Invariant({
   name: "refund-within-order",
   description: "Never refund more than is left on the order, or an order that is not refundable.",
   rule: refundIsWithinOrder,
-  assuranceBasis: NO_MODEL_AT_GUARDED_CALL,
   onViolation: REFUND_ESCALATED,
 });
 
@@ -113,7 +106,6 @@ export const refundBudget = new PreNode({
   name: "refund-budget-headroom",
   description: "A refund must leave headroom in today's refund budget: budget left / amount above 1.1.",
   monitor: refundBudgetHeadroom,
-  assuranceBasis: NO_MODEL_AT_GUARDED_CALL,
   gammaThreshold: 1.1,
 });
 
@@ -121,8 +113,12 @@ export const emailToCustomer = new Invariant({
   name: "email-to-customer-on-file",
   description: "Only email the customer on the order, never an address the model introduced.",
   rule: emailIsToCustomerOnFile,
-  assuranceBasis: NO_MODEL_AT_GUARDED_CALL,
 });
+
+/** Record that a gated action ran, right after it ran, under its request's decision id. */
+export async function recordAction(actionName: string, decisionId: string): Promise<void> {
+  await ledger.current.writeAction(AGENT_ID, actionName, { decisionId });
+}
 
 const adapter = new LangGraphAdapter();
 export const ownershipGate = adapter.compileInvariant(orderBelongsToCustomer);

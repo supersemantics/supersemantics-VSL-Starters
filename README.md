@@ -25,7 +25,8 @@ look an order up, refund it, and email the customer. Four gates decide whether i
 | `email-to-customer-on-file` | Invariant | every email | only to the address on the order, never one the model introduced |
 
 A violation of `refund-within-order` stops refunds until a named human re-enables the agent, through
-vsl-core's human-authorised re-enablement. Every gate decision is written to a hash-chained ledger.
+vsl-core's human-authorised re-enablement. Every gate decision and every action is written to a
+hash-chained ledger, and each demo ends by printing that every decision's gates held before its action.
 
 Each demo runs the same seven requests: an allowed refund, another customer's order (refused), a
 refund over budget (denied), a receipt sent to a stranger (blocked), a final-sale refund (the agent
@@ -36,12 +37,13 @@ stops), a refund while stopped (paused), and the same refund after a supervisor 
 1. **Find the decision points**: actions with an effect outside the process (money, messages,
    writes, deletes), and reads that could reach data the requester shouldn't see.
 2. **Pick the primitive**: an Invariant for a rule that must never be broken; a PreNode for a measured
-   score against a threshold. Give each an honest `AssuranceBasis`: a gate that only allows or blocks,
-   with no model at the guarded call, is F1 = true, F2 = NONE (LOW).
+   score against a threshold.
 3. **Put the gate immediately before the action**, wired literally: a gate node and a
    route-on-denial edge in LangGraph, per-tool middleware named by tool in the Agent Framework.
 4. **Record every decision** with `write_gate_decision` / `writeGateDecision` / `WriteGateDecision`,
-   and handle a Terminal State in your own code.
+   and each action's run with `write_action` / `writeAction` / `WriteAction`. The ledger then shows
+   whether every gate decided before its action (`enforcement(decision_id)`), computed, not declared.
+   Handle a Terminal State in your own code.
 5. **Test each gate**: it blocks the case it should and passes the one it shouldn't, and a denied
    action never runs.
 

@@ -1,6 +1,7 @@
 """python -m refund_agent: a few requests from signed-in customers through the gated agent, offline."""
 
 import asyncio
+from collections import Counter
 
 from . import governance
 from .agent import RefundAgent
@@ -31,6 +32,8 @@ async def main() -> None:
     customer, request = "bob@example.com", "Refund order A200 for $100."
     print(f"\n{customer}: {request}\nAgent: {await agent.handle(customer, request)}")
     print(f"\nLedger intact: {governance.ledger.verify_integrity()} (refund-ledger.jsonl)")
+    counts = Counter(e.value for e in governance.ledger.enforcement_by_decision().values())
+    print("Enforcement by decision: " + ", ".join(f"{n} {name}" for name, n in counts.items()))
 
 
 if __name__ == "__main__":

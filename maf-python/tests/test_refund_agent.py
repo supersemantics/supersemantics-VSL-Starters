@@ -3,7 +3,7 @@ denied tool never runs, through Agent Framework's real function-calling loop. Of
 
 import pytest
 from vsl_core.exceptions import AutomationDeniedException, InvariantViolation
-from vsl_core.ledger import LedgerEntryType, VerbaLedger
+from vsl_core.ledger import ACTION_KEY, Enforcement, LedgerEntryType, VerbaLedger
 
 from refund_agent import domain, governance, providers
 from refund_agent.agent import RefundAgent, ScriptedChatClient
@@ -67,13 +67,16 @@ async def test_ownership_gate_allows_only_the_customers_own_orders():
         assert caught.value.terminal_state_name is None  # refused, not a reason to stop the agent
 
 
-def test_every_gate_declares_f1_and_no_f2():
-    for gate in (
-        governance.order_belongs_to_customer, governance.refund_within_order,
-        governance.refund_budget, governance.email_to_customer,
-    ):
-        assert gate.assurance_basis.f1_pre_commitment is True
-        assert gate.assurance_basis.f2_modification.name == "NONE"
+async def test_the_ledger_shows_every_gate_decided_before_its_action():
+    from refund_agent.__main__ import REQUESTS
+
+    agent = RefundAgent()
+    for customer, request in REQUESTS:
+        await agent.handle(customer, request)
+    results = governance.ledger.enforcement_by_decision()
+    acted = {e.decision_id for e in governance.ledger.store.all_entries() if ACTION_KEY in e.payload}
+    assert len(acted) >= 3  # the lookup, the allowed refund, the refund whose email was blocked
+    assert results and set(results.values()) == {Enforcement.BEFORE_ACTION}
 
 
 # ---- the agent: a denied tool never runs, and the model never sees the denial ------------------
@@ -119,7 +122,7 @@ async def test_a_hard_rule_violation_stops_the_agent_until_a_human_re_enables_it
 async def test_every_gate_decision_is_recorded_under_one_decision_id():
     await RefundAgent().handle("alice@example.com", "Please refund order A100.")
     entries = list(governance.ledger.store.all_entries())
-    assert [e.payload.get("primitive_name") for e in entries] == [
+    assert [e.payload["primitive_name"] for e in entries if "primitive_name" in e.payload] == [
         "order-belongs-to-customer", "refund-within-order", "refund-budget-headroom",
         "order-belongs-to-customer", "email-to-customer-on-file",
     ]

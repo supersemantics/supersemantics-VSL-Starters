@@ -28,3 +28,5 @@ Console.WriteLine("\n(Refunds Supervisor j.smith re-enabled the agent.)");
 const string again = "Refund order A200 for $100.";
 Console.WriteLine($"\nbob@example.com: {again}\nAgent: {await agent.HandleAsync("bob@example.com", again)}");
 Console.WriteLine($"\nLedger intact: {Governance.Ledger.VerifyIntegrity()} (refund-ledger.jsonl)");
+var counts = Governance.Ledger.EnforcementByDecision().Values.GroupBy(SuperSemantics.Vsl.EnforcementWire.ToWire).Select(g => $"{g.Count()} {g.Key}");
+Console.WriteLine($"Enforcement by decision: {string.Join(", ", counts)}");

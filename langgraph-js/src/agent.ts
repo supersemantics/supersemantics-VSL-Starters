@@ -26,6 +26,7 @@ import {
   newInstance,
   ownershipGate,
   reEnable,
+  recordAction,
   refundBudgetGate,
   refundRuleGate,
 } from "./governance.ts";
@@ -115,7 +116,9 @@ async function plan(state: State): Promise<Partial<State>> {
 const passthrough = async () => ({});
 
 async function doRefund(state: State): Promise<Partial<State>> {
-  return { refundId: await issueRefund(state.orderId, state.amount) };
+  const refundId = await issueRefund(state.orderId, state.amount);
+  await recordAction("issueRefund", state.decisionId);
+  return { refundId };
 }
 
 async function doSendEmail(state: State): Promise<Partial<State>> {
@@ -123,11 +126,13 @@ async function doSendEmail(state: State): Promise<Partial<State>> {
     ? `We refunded $${state.amount.toFixed(2)} for order ${state.orderId} (ref ${state.refundId}).`
     : `Here is the receipt for order ${state.orderId}.`;
   await sendEmail(state.emailTo, `Order ${state.orderId}`, text);
+  await recordAction("sendEmail", state.decisionId);
   return { reply: `Done. ${text} A confirmation went to ${state.emailTo}.` };
 }
 
 async function answer(state: State): Promise<Partial<State>> {
   const order = lookupOrder(state.orderId);
+  await recordAction("lookupOrder", state.decisionId);
   if (!order) return { reply: "I could not find that order." };
   return { reply: `Order ${order.orderId}: $${order.total.toFixed(2)}, ${order.refundable ? "refundable" : "final sale"}.` };
 }

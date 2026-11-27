@@ -3,17 +3,19 @@ using System.ComponentModel;
 namespace RefundAgent;
 
 /// <summary>
-/// The tools the model can call. Two have real-world effects and are gated (Governance.cs, wired in
-/// RefundAgentFactory.cs); looking up an order only reads, so it has no gate.
+/// The tools the model can call, each gated (Governance.cs, wired in RefundAgentFactory.cs). Each
+/// records that it ran, so the ledger shows its gates decided first.
 /// </summary>
 public static class Tools
 {
     private const string Sender = "refunds@example.com";
 
-    [Description("Look up an order. Read-only: no side effect, so no gate.")]
+    [Description("Look up an order.")]
     public static string LookupOrder([Description("Order id, for example A100")] string orderId)
     {
+        // Read-only, but gated: what it reads (another customer's order and email) would leak.
         var order = Orders.Find(orderId);
+        Governance.RecordAction("lookup_order");
         return order is null
             ? "No such order."
             : $"Order {order.OrderId}: ${order.Total:F2}, {(order.Refundable ? "refundable" : "final sale")}, {order.CustomerEmail}.";
@@ -26,6 +28,7 @@ public static class Tools
     {
         var service = new RefundService();
         var refundId = await service.CreateAsync(new RefundCreateOptions { OrderId = orderId, Amount = amount });
+        Governance.RecordAction("issue_refund");
         RefundBook.Current.Record(orderId, amount);
         return $"Refunded ${amount:F2} for order {orderId} (ref {refundId}).";
     }
@@ -38,6 +41,7 @@ public static class Tools
         [Description("Message body")] string body)
     {
         await Mailer.Client.SendMailAsync(Sender, to, subject, body);
+        Governance.RecordAction("send_email");
         return $"Email sent to {to}.";
     }
 }

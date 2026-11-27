@@ -44,9 +44,9 @@ comes from your authentication, never from the request text).
 - **email-to-customer-on-file**: the confirmation goes only to the address on the order, never to
   one the model introduced.
 
-All four run before their action (F1 = true) and only allow or block it, with no model involved at
-the guarded call (F2 = NONE), which derives LOW. That describes influence on a model, not how well the
-gates enforce: deciding whether an action happens at all is F1.
+Each action records that it ran (`recordAction`), so the ledger shows that every gate decided
+before its action: `ledger.current.enforcement(decisionId)` reads `BEFORE_ACTION`. The demo prints the
+result for every request.
 
 ## How it's laid out
 
@@ -76,11 +76,12 @@ with node names and routes written as literals.
 1. **Find the decision points**: actions with an effect outside the process (money, messages,
    writes, deletes), and reads that could reach data the requester shouldn't see.
 2. **Pick the primitive**: an Invariant for a rule that must never be broken; a PreNode for a measured
-   score against a threshold. Give each a real `AssuranceBasis`, never a default.
+   score against a threshold.
 3. **Put the side effect in `tools.ts`** and a gate node in front of it in `agent.ts`, with a
    `routeOnDenial` edge after the gate.
-4. **Record every decision** with `writeGateDecision`, and handle a Terminal State yourself: vsl-core
-   throws; catching it, recording it and stopping is your code.
+4. **Record every decision** with `writeGateDecision`, and each action's run with `writeAction`, and
+   handle a Terminal State yourself: vsl-core throws; catching it, recording it and stopping is your
+   code.
 5. **Add a test** that the gate blocks the case it should and passes the one it shouldn't.
 
 To use a real model, have the `plan` node call it and return the same plan (an action, an order id,
@@ -89,8 +90,8 @@ stand-ins in `providers.ts` (for example a nodemailer transport). The gates don'
 
 ## Notes
 
-- `package.json` installs the VSL packages from npm: `@supersemantics/vsl-core` `^0.2.3` and
-  `@supersemantics/vsl-langgraph` `^0.1.3`. Both are published from GitHub Actions with provenance
+- `package.json` installs the VSL packages from npm: `@supersemantics/vsl-core` `^0.3.0` and
+  `@supersemantics/vsl-langgraph` `^0.2.0`. Both are published from GitHub Actions with provenance
   (`npm audit signatures` checks it). The adapter depends on the same vsl-core range, so npm installs
   one copy: the adapter recognises a denial with `instanceof`, which needs the same copy on both
   sides.

@@ -17,9 +17,9 @@
 //   * email-to-customer-on-file (Invariant): only to the address on the order, never one the model
 //     introduced.
 //
-// Each gate runs before its tool (F1 = true) and only allows or blocks it, with no model involved at
-// the guarded call (F2 = None). That derives Low assurance: an honest description of influence on a
-// model, not of how well the gates enforce. Deciding whether an action happens at all is F1.
+// Each gate runs before its tool. The ledger shows it: each tool records that it ran (RecordAction),
+// and Ledger.Enforcement(decisionId) reads BeforeAction when every gate decided first, or a denial
+// stopped the tool. Nothing about that is declared.
 //
 // The gates evaluate the tool call's own arguments (VslToolArguments) and look up the rest (the order,
 // today's refunds, the signed-in customer) themselves. The customer never comes from the model: it is
@@ -38,9 +38,6 @@ public static class Governance
     public const string RefundBudget = "refund-budget-headroom";
     public const string EmailRule = "email-to-customer-on-file";
 
-    // Runs before the tool (F1); only allows or blocks it, no model at the guarded call (F2 None).
-    private static readonly AssuranceBasis NoModelAtGuardedCall = new(f1PreCommitment: true, F2Modification.None);
-
     public static readonly TerminalState RefundEscalated = new(
         "refund-escalated",
         "Refunds stop until a refunds supervisor reviews the case and re-enables the agent.",
@@ -57,6 +54,9 @@ public static class Governance
 
     public static VerbaLedger UseLedger(string path) => Ledger = new VerbaLedger(new JsonlLedgerStore(path, fsync: true));
 
+    /// <summary>Records that a gated tool ran, right after it ran, under the current request's decision id.</summary>
+    public static void RecordAction(string actionName) => Ledger.WriteAction(AgentId, actionName, DecisionId.Value!);
+
     public static readonly Invariant OrderBelongsToCustomer = new(
         OwnershipRule,
         "Only look up, refund or email about an order for the customer it belongs to.",
@@ -68,8 +68,7 @@ public static class Governance
                         && string.Equals(order.CustomerEmail, CustomerEmail.Value?.Trim(), StringComparison.OrdinalIgnoreCase);
             Ledger.WriteGateDecision(AgentId, OwnershipRule, allowed: holds, decisionId: DecisionId.Value);
             return Task.FromResult(holds);
-        },
-        NoModelAtGuardedCall);
+        });
 
     public static readonly Invariant RefundWithinOrder = new(
         RefundRule,
@@ -84,7 +83,6 @@ public static class Governance
             Ledger.WriteGateDecision(AgentId, RefundRule, allowed: holds, decisionId: DecisionId.Value);
             return Task.FromResult(holds);
         },
-        NoModelAtGuardedCall,
         onViolation: RefundEscalated);
 
     public static readonly PreNode RefundBudgetHeadroom = new(
@@ -98,7 +96,6 @@ public static class Governance
             Ledger.WriteGateDecision(AgentId, RefundBudget, estimate: estimate, gammaThreshold: 1.1, decisionId: DecisionId.Value);
             return Task.FromResult(estimate);
         },
-        NoModelAtGuardedCall,
         gammaThreshold: 1.1);
 
     public static readonly Invariant EmailToCustomer = new(
@@ -112,8 +109,7 @@ public static class Governance
             var holds = order is not null && string.Equals(to, order.CustomerEmail, StringComparison.OrdinalIgnoreCase);
             Ledger.WriteGateDecision(AgentId, EmailRule, allowed: holds, decisionId: DecisionId.Value);
             return Task.FromResult(holds);
-        },
-        NoModelAtGuardedCall);
+        });
 
     // ---- Terminal State and the way back ---------------------------------------------------------
 

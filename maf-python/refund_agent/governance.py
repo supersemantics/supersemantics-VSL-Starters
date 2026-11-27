@@ -17,9 +17,9 @@ One gate per decision point:
   * email-to-customer-on-file (Invariant): only to the address on the order, never one the model
     introduced.
 
-Each gate runs before its tool (F1 = True) and only allows or blocks it, with no model involved at
-the guarded call (F2 = NONE). That derives LOW assurance: an honest description of influence on a
-model, not of how well the gates enforce. Deciding whether an action happens at all is F1.
+Each gate runs before its tool. The ledger shows it: each tool records that it ran (record_action),
+and ledger.enforcement(decision_id) reads BEFORE_ACTION when every gate decided first, or a denial
+stopped the tool. Nothing about that is declared.
 
 The gates evaluate the tool call's own arguments (vsl_maf.tool_arguments) and look up the rest
 (the order, today's refunds, the signed-in customer) themselves. The customer never comes from the
@@ -37,15 +37,12 @@ from vsl_core.constructs import Invariant, PreNode, TerminalState
 from vsl_core.governance import GovernanceAuthority, request_re_enablement
 from vsl_core.identity import Evidence, IdentityKey, Instance
 from vsl_core.ledger import JsonlLedgerStore, LedgerEntryType, VerbaLedger
-from vsl_core.metrics import AssuranceBasis, F2Modification, GammaEstimate
+from vsl_core.metrics import GammaEstimate
 from vsl_maf import MAFAdapter
 
 from . import domain
 
 AGENT_ID = "refund-agent"
-
-# Runs before the tool (F1); only allows or blocks it, no model at the guarded call (F2 NONE).
-NO_MODEL_AT_GUARDED_CALL = AssuranceBasis(f1_pre_commitment=True, f2_modification=F2Modification.NONE)
 
 REFUND_ESCALATED = TerminalState(
     name="refund-escalated",
@@ -126,14 +123,12 @@ order_belongs_to_customer = Invariant(
     name="order-belongs-to-customer",
     description="Only look up, refund or email about an order for the customer it belongs to.",
     rule=order_is_the_customers,
-    assurance_basis=NO_MODEL_AT_GUARDED_CALL,
 )
 
 refund_within_order = Invariant(
     name="refund-within-order",
     description="Never refund more than is left on the order, or an order that is not refundable.",
     rule=refund_is_within_order,
-    assurance_basis=NO_MODEL_AT_GUARDED_CALL,
     on_violation=REFUND_ESCALATED,
 )
 
@@ -141,7 +136,6 @@ refund_budget = PreNode(
     name="refund-budget-headroom",
     description="A refund must leave headroom in today's refund budget: budget left / amount above 1.1.",
     monitor=refund_budget_headroom,
-    assurance_basis=NO_MODEL_AT_GUARDED_CALL,
     gamma_threshold=1.1,
 )
 
@@ -149,7 +143,6 @@ email_to_customer = Invariant(
     name="email-to-customer-on-file",
     description="Only email the customer on the order, never an address the model introduced.",
     rule=email_is_to_customer_on_file,
-    assurance_basis=NO_MODEL_AT_GUARDED_CALL,
 )
 
 adapter = MAFAdapter(identity_key=AGENT_ID)
@@ -158,6 +151,10 @@ refund_rule_gate = adapter.compile_invariant(refund_within_order)
 refund_budget_gate = adapter.compile_pre_node(refund_budget)
 email_gate = adapter.compile_invariant(email_to_customer)
 
+
+def record_action(action_name: str) -> None:
+    """Record that a gated tool ran, right after it ran, under the current request's decision id."""
+    ledger.write_action(identity_key=AGENT_ID, action_name=action_name, decision_id=decision_id.get())
 
 # ---- Terminal State and the way back --------------------------------------------------------
 
